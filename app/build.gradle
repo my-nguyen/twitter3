@@ -2,10 +2,15 @@ apply plugin: 'com.android.application'
 
 def apikeyPropertiesFile = rootProject.file("apikey.properties")
 def apikeyProperties = new Properties()
-apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
+if (apikeyPropertiesFile.exists()) {
+    apikeyPropertiesFile.withInputStream { apikeyProperties.load(it) }
+} else {
+    logger.warn("apikey.properties not found: building with empty Twitter API keys, so login will fail.")
+}
 
 android {
-    compileSdkVersion 28
+    namespace 'com.codepath.apps.restclienttemplate'
+    compileSdkVersion 36
 
     defaultConfig {
         applicationId "com.codepath.apps.restclienttemplate"
@@ -18,20 +23,24 @@ android {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
             }
         }
-        buildConfigField("String", "CONSUMER_KEY", apikeyProperties['CONSUMER_KEY'])
-        buildConfigField("String", "CONSUMER_SECRET", apikeyProperties['CONSUMER_SECRET'])
+        buildConfigField("String", "CONSUMER_KEY", apikeyProperties.getProperty('CONSUMER_KEY', '""'))
+        buildConfigField("String", "CONSUMER_SECRET", apikeyProperties.getProperty('CONSUMER_SECRET', '""'))
     }
 
     // Related to https://github.com/scribejava/scribejava/issues/480
     // Scribe expects Java 7 or this custom Apache library
-    lintOptions {
+    lint {
         lintConfig rootProject.file('gradle/lint.xml')
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.txt'
         }
     }
 }
@@ -39,7 +48,7 @@ android {
 dependencies {
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
     implementation fileTree(dir: 'libs', include: '*.jar')
-    implementation 'com.codepath.libraries:android-oauth-handler:2.2.0'
+    implementation 'com.codepath.libraries:android-oauth-handler:2.4.0'
     implementation 'commons-codec:commons-codec:1.10'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     // Glide for remote image loading
@@ -50,5 +59,7 @@ dependencies {
     def room_version = "2.2.5"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
+    // Room 2.2.5 bundles a sqlite-jdbc without Apple Silicon native libraries
+    annotationProcessor 'org.xerial:sqlite-jdbc:3.36.0.3'
     implementation 'com.facebook.stetho:stetho:1.5.1'
 }

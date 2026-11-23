@@ -7,6 +7,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.codepath.apps.restclienttemplate.models.Tweet;
 import com.codepath.asynchttpclient.callback.JsonHttpResponseHandler;
@@ -73,7 +74,10 @@ public class TimelineActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(int statusCode, Headers headers, String response, Throwable throwable) {
-                Log.i(TAG, "onFailure", throwable);
+                Log.e(TAG, "Timeline request failed: HTTP " + statusCode + ": " + response, throwable);
+                swipeContainer.setRefreshing(false);
+                Toast.makeText(TimelineActivity.this,
+                        "Couldn't load timeline (HTTP " + statusCode + ")", Toast.LENGTH_LONG).show();
             }
         });
     }
